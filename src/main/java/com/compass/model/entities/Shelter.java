@@ -46,7 +46,7 @@ public class Shelter implements Serializable {
     private String responsible;
 
     @NotBlank(message = "Phone number must not be blank")
-    @Pattern(regexp = "^\\+55 \\(\\d{2}\\) \\d{4,5}-\\d{4}$", message = "Invalid brazilian phone number")
+    @Pattern(regexp = "^\\+55\\(\\d{2}\\)\\d{4,5}-\\d{4}$", message = "Invalid brazilian phone number")
     @Column(name = "phone_number")
     private String phoneNumber;
 
@@ -56,7 +56,7 @@ public class Shelter implements Serializable {
     private String email;
 
     @NotNull(message = "Capacity must not be null")
-    @Min(value = 0, message = "Capacity must be at least 0")
+    @Min(value = 1, message = "Capacity must be at least 1")
     private Integer capacity;
 
     @NotNull(message = "Occupation must not be null")
@@ -65,4 +65,19 @@ public class Shelter implements Serializable {
 
     @OneToMany(mappedBy = "shelter", cascade = CascadeType.ALL)
     private List<Order> orders = new ArrayList<>();
+
+    public double getOccupationPercentage() {
+        int totalItems = orders
+                .stream()
+                .mapToInt(order -> order.getItems()
+                        .stream()
+                        .mapToInt(Item::getQuantity)
+                        .sum())
+                .sum();
+        return (double) (totalItems / capacity) * 100;
+    }
+
+    public void setOccupationPercentage(double percentage) {
+        this.occupation = (int) ((percentage * capacity) / 100);
+    }
 }
