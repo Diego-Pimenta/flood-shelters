@@ -1,8 +1,10 @@
-package com.compass.entities;
+package com.compass.model.entities;
 
-import com.compass.entities.enums.ItemCategory;
-import com.compass.entities.enums.ItemType;
+import com.compass.model.entities.enums.ClothingGenre;
+import com.compass.model.entities.enums.ClothingSize;
+import com.compass.model.entities.enums.ItemType;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serial;
@@ -20,6 +23,7 @@ import java.io.Serializable;
 import java.time.LocalDate;
 
 @Data
+@Builder
 @Entity
 @Table(name = "tb_item")
 public class Item implements Serializable {
@@ -35,11 +39,14 @@ public class Item implements Serializable {
     @Column(name = "item_type")
     private ItemType itemType;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "item_category")
-    private ItemCategory itemCategory;
-
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    private ClothingGenre genre;
+
+    @Enumerated(EnumType.STRING)
+    private ClothingSize size;
+
     private Integer quantity;
 
     @Column(name = "measuring_unit")
@@ -48,7 +55,13 @@ public class Item implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate validity;
 
+    @JsonIgnore
     @ManyToOne
-    @JoinColumn(name = "distribution_center_id")
-    private DistributionCenter distributionCenter;
+    @JoinColumn(name = "donation_id")
+    private Donation donation;
+
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "order_id")
+    private Order order;
 }
