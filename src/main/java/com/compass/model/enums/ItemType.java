@@ -1,4 +1,4 @@
-package com.compass.model.entities.enums;
+package com.compass.model.enums;
 
 public enum ItemType {
 

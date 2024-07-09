@@ -1,6 +1,5 @@
 package com.compass.model.entities;
 
-import com.compass.model.entities.enums.ItemType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,16 +9,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
-@Data
 @Entity
 @Table(name = "tb_order")
 public class Order implements Serializable {
@@ -43,14 +39,74 @@ public class Order implements Serializable {
     @Column(name = "refusal_reason")
     private String refusalReason;
 
-    // função para ser utilizada no serviço a fim de impedir que um abrigo tenha mais que 200 itens de um mesmo tipo
-    public Map<ItemType, Integer> getTotalItemsByType() {
-        Map<ItemType, Integer> totalItemsByType = new HashMap<>();
+    public Order() {
+    }
 
-        for (Item item : items) {
-            // faz um merge para adicionar uma chave ao mapa ou atualizar algum valor
-            totalItemsByType.merge(item.getItemType(), item.getQuantity(), Integer::sum);
-        }
-        return totalItemsByType;
+    public Order(Long id, Shelter shelter, Set<Item> items, Boolean accepted, String refusalReason) {
+        this.id = id;
+        this.shelter = shelter;
+        this.items = items;
+        this.accepted = accepted;
+        this.refusalReason = refusalReason;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Shelter getShelter() {
+        return shelter;
+    }
+
+    public void setShelter(Shelter shelter) {
+        this.shelter = shelter;
+    }
+
+    public Set<Item> getItems() {
+        return items;
+    }
+
+    public Boolean getAccepted() {
+        return accepted;
+    }
+
+    public void setAccepted(Boolean accepted) {
+        this.accepted = accepted;
+    }
+
+    public String getRefusalReason() {
+        return refusalReason;
+    }
+
+    public void setRefusalReason(String refusalReason) {
+        this.refusalReason = refusalReason;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Order order = (Order) o;
+        return Objects.equals(id, order.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
+
+    @Override
+    public String toString() {
+        return "Order{" +
+                "id=" + id +
+                ", shelter=" + shelter +
+                ", items=" + items +
+                ", accepted=" + accepted +
+                ", refusalReason='" + refusalReason + '\'' +
+                '}';
     }
 }

@@ -1,19 +1,21 @@
 package com.compass.dao.impl;
 
 import com.compass.dao.DonationDao;
-import com.compass.dao.exception.DbException;
+import com.compass.exception.DbException;
+import com.compass.exception.DbIntegrityException;
 import com.compass.model.entities.Donation;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.PersistenceException;
-import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
-@RequiredArgsConstructor
 public class DonationDaoImpl implements DonationDao {
 
     private final EntityManager em;
+
+    public DonationDaoImpl(EntityManager em) {
+        this.em = em;
+    }
 
     @Override
     public void save(Donation donation) {
@@ -22,9 +24,9 @@ public class DonationDaoImpl implements DonationDao {
             transaction.begin();
             em.persist(donation);
             transaction.commit();
-        } catch (PersistenceException e) {
+        } catch (Exception e) {
             if (transaction.isActive()) transaction.rollback();
-            throw new DbException("Error saving donation");
+            throw new DbException(e.getMessage());
         }
     }
 
@@ -32,8 +34,8 @@ public class DonationDaoImpl implements DonationDao {
     public List<Donation> findAll() {
         try {
             return em.createQuery("SELECT d FROM Donation d", Donation.class).getResultList();
-        } catch (PersistenceException e) {
-            throw new DbException("Error finding all donations");
+        } catch (Exception e) {
+            throw new DbException(e.getMessage());
         }
     }
 
@@ -41,8 +43,8 @@ public class DonationDaoImpl implements DonationDao {
     public Donation findById(Long id) {
         try {
             return em.find(Donation.class, id);
-        } catch (PersistenceException e) {
-            throw new DbException("Error finding donation");
+        } catch (Exception e) {
+            throw new DbException(e.getMessage());
         }
     }
 
@@ -53,9 +55,9 @@ public class DonationDaoImpl implements DonationDao {
             transaction.begin();
             em.merge(donation);
             transaction.commit();
-        } catch (PersistenceException e) {
+        } catch (Exception e) {
             if (transaction.isActive()) transaction.rollback();
-            throw new DbException("Error updating donation");
+            throw new DbException(e.getMessage());
         }
     }
 
@@ -67,9 +69,9 @@ public class DonationDaoImpl implements DonationDao {
             Donation donation = em.find(Donation.class, id);
             if (donation != null) em.remove(donation);
             transaction.commit();
-        } catch (PersistenceException e) {
+        } catch (Exception e) {
             if (transaction.isActive()) transaction.rollback();
-            throw new DbException("Error deleting donation");
+            throw new DbIntegrityException(e.getMessage());
         }
     }
 }

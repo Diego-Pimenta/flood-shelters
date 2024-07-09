@@ -1,5 +1,6 @@
 package com.compass.model.entities;
 
+import com.compass.model.enums.ItemType;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,14 +15,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
-@Data
 @Entity
 @Table(name = "tb_shelter")
 public class Shelter implements Serializable {
@@ -46,7 +48,7 @@ public class Shelter implements Serializable {
     private String responsible;
 
     @NotBlank(message = "Phone number must not be blank")
-    @Pattern(regexp = "^\\+55\\(\\d{2}\\)\\d{4,5}-\\d{4}$", message = "Invalid brazilian phone number")
+    @Pattern(regexp = "^\\+55\\(\\d{2}\\)\\d{4,5}-\\d{4}$", message = "Invalid Brazilian phone number")
     @Column(name = "phone_number")
     private String phoneNumber;
 
@@ -66,7 +68,78 @@ public class Shelter implements Serializable {
     @OneToMany(mappedBy = "shelter", cascade = CascadeType.ALL)
     private List<Order> orders = new ArrayList<>();
 
-    public double getOccupationPercentage() {
+    public Shelter() {
+    }
+
+    public Shelter(Long id, String name, String address, String responsible, String phoneNumber, Integer capacity, String email, Integer occupation, List<Order> orders) {
+        this.id = id;
+        this.name = name;
+        this.address = address;
+        this.responsible = responsible;
+        this.phoneNumber = phoneNumber;
+        this.capacity = capacity;
+        this.email = email;
+        this.occupation = occupation;
+        this.orders = orders;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getResponsible() {
+        return responsible;
+    }
+
+    public void setResponsible(String responsible) {
+        this.responsible = responsible;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public Integer getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(Integer capacity) {
+        this.capacity = capacity;
+    }
+
+    public double getOccupation() {
         int totalItems = orders
                 .stream()
                 .mapToInt(order -> order.getItems()
@@ -77,7 +150,38 @@ public class Shelter implements Serializable {
         return (double) (totalItems / capacity) * 100;
     }
 
-    public void setOccupationPercentage(double percentage) {
-        this.occupation = (int) ((percentage * capacity) / 100);
+    public void setOccupation(double percentage) {
+        this.occupation = (int) (percentage * capacity) / 100;
+    }
+
+    public List<Order> getOrders() {
+        return orders;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Shelter shelter = (Shelter) o;
+        return Objects.equals(id, shelter.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
+
+    @Override
+    public String toString() {
+        return "Shelter{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", address='" + address + '\'' +
+                ", responsible='" + responsible + '\'' +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                ", email='" + email + '\'' +
+                ", capacity=" + capacity +
+                ", occupation=" + occupation +
+                '}';
     }
 }
