@@ -142,10 +142,7 @@ public class Shelter implements Serializable {
     public double getOccupation() {
         int totalItems = orders
                 .stream()
-                .mapToInt(order -> order.getItems()
-                        .stream()
-                        .mapToInt(Item::getQuantity)
-                        .sum())
+                .mapToInt(Order::getQuantity)
                 .sum();
         return (double) (totalItems / capacity) * 100;
     }

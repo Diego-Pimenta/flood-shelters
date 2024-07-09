@@ -96,6 +96,8 @@ public class ShelterServiceImpl implements ShelterService {
 
             ShelterDao shelterDao = DaoFactory.createShelterDao();
             shelterDao.update(shelter);
+
+            System.out.println("Abrigo atualizado.");
         } catch (NumberFormatException e) {
             System.out.println("Erro de formatação: o id deve ser um número.");
         } catch (NoSuchElementException e) {
@@ -118,6 +120,8 @@ public class ShelterServiceImpl implements ShelterService {
 
             ShelterDao shelterDao = DaoFactory.createShelterDao();
             shelterDao.delete(id);
+
+            System.out.println("Abrigo deletado.");
         } catch (NumberFormatException e) {
             System.out.println("Erro de formatação: o id deve ser um número.");
         } catch (NoSuchElementException e) {

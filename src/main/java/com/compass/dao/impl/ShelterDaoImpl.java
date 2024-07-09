@@ -6,6 +6,7 @@ import com.compass.exception.DbIntegrityException;
 import com.compass.model.entities.Shelter;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.PersistenceException;
 
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class ShelterDaoImpl implements ShelterDao {
             transaction.begin();
             em.persist(shelter);
             transaction.commit();
-        } catch (Exception e) {
+        } catch (PersistenceException e) {
             if (transaction.isActive()) transaction.rollback();
             throw new DbException(e.getMessage());
         }
@@ -34,7 +35,7 @@ public class ShelterDaoImpl implements ShelterDao {
     public List<Shelter> findAll() {
         try {
             return em.createQuery("SELECT s FROM Shelter s", Shelter.class).getResultList();
-        } catch (Exception e) {
+        } catch (PersistenceException e) {
             throw new DbException(e.getMessage());
         }
     }
@@ -43,7 +44,7 @@ public class ShelterDaoImpl implements ShelterDao {
     public Shelter findById(Long id) {
         try {
             return em.find(Shelter.class, id);
-        } catch (Exception e) {
+        } catch (PersistenceException e) {
             throw new DbException(e.getMessage());
         }
     }
@@ -55,7 +56,7 @@ public class ShelterDaoImpl implements ShelterDao {
             transaction.begin();
             em.merge(shelter);
             transaction.commit();
-        } catch (Exception e) {
+        } catch (PersistenceException e) {
             if (transaction.isActive()) transaction.rollback();
             throw new DbException(e.getMessage());
         }
@@ -69,7 +70,7 @@ public class ShelterDaoImpl implements ShelterDao {
             Shelter shelter = em.find(Shelter.class, id);
             if (shelter != null) em.remove(shelter);
             transaction.commit();
-        } catch (Exception e) {
+        } catch (PersistenceException e) {
             if (transaction.isActive()) transaction.rollback();
             throw new DbIntegrityException(e.getMessage());
         }

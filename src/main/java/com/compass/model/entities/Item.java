@@ -12,8 +12,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import java.io.Serial;
@@ -46,8 +45,6 @@ public class Item implements Serializable {
     @Enumerated(EnumType.STRING)
     private ClothingSize size;
 
-    private Integer quantity;
-
     @Column(name = "measuring_unit")
     private String measuringUnit;
 
@@ -55,26 +52,23 @@ public class Item implements Serializable {
     private LocalDate validity;
 
     @JsonIgnore
-    @ManyToOne
-    @JoinColumn(name = "donation_id")
+    @OneToOne(mappedBy = "item")
     private Donation donation;
 
     @JsonIgnore
-    @ManyToOne
-    @JoinColumn(name = "order_id")
+    @OneToOne(mappedBy = "item")
     private Order order;
 
     public Item() {
     }
 
-    public Item(Long id, String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, Integer quantity, String measuringUnit, LocalDate validity, Donation donation, Order order) {
+    public Item(Long id, String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity, Donation donation, Order order) {
         this.id = id;
         this.name = name;
         this.itemType = itemType;
         this.description = description;
         this.genre = genre;
         this.size = size;
-        this.quantity = quantity;
         this.measuringUnit = measuringUnit;
         this.validity = validity;
         this.donation = donation;
@@ -127,14 +121,6 @@ public class Item implements Serializable {
 
     public void setSize(ClothingSize size) {
         this.size = size;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
     }
 
     public String getMeasuringUnit() {
@@ -191,7 +177,6 @@ public class Item implements Serializable {
                 ", description='" + description + '\'' +
                 ", genre=" + genre +
                 ", size=" + size +
-                ", quantity=" + quantity +
                 ", measuringUnit='" + measuringUnit + '\'' +
                 ", validity=" + validity +
                 '}';

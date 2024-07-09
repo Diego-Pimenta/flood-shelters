@@ -17,15 +17,12 @@ import com.compass.util.CsvUtil;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.util.Set;
 
 public class DonationServiceImpl implements DonationService {
 
@@ -43,7 +40,7 @@ public class DonationServiceImpl implements DonationService {
 
             if (distributionCenter == null) throw new ResourceNotFoundException("Centro de dist. não encontrado.");
 
-            Donation donation = createDonation(distributionCenter);
+            Donation donation = new Donation();
 
             String name = getInput("Digite o nome do item doado: ");
             ItemType itemType = ItemType.valueOf(getInput("Digite o tipo do item doado (CLOTHING, HYGIENE, FOOD): "));
@@ -55,16 +52,23 @@ public class DonationServiceImpl implements DonationService {
                 genre = ClothingGenre.valueOf(getInput("Digite o gênero da roupa doada (M/F): "));
                 size = ClothingSize.valueOf(getInput("Digite o tamanho da roupa doada (CHILDREN, XS, S, M, L, XL): "));
             }
-            int quantity = Integer.parseInt(getInput("Digite a quantidade do item doado: "));
             String measuringUnit = getInput("Digite a unidade de medida do item doado: ");
             LocalDate validity = null;
 
             if (itemType.equals(ItemType.FOOD)) {
                 validity = LocalDate.parse(getInput("Digite a validade do alimento doado (yyyy-MM-dd): "), dtf);
             }
-            Item item = createItem(name, itemType, description, genre, size, quantity, measuringUnit, validity, donation);
+            Integer quantity = Integer.parseInt(getInput("Digite a quantidade do item doado: "));
 
-            donation.getItems().add(item);
+            // Verifica se a adição do item excede o limite de armazenamento do centro de dist.
+            if (isExceedingLimit(distributionCenterId, itemType, quantity)) {
+                throw new StorageLimitException("Erro: quantidade do item excede o limite");
+            }
+            Item item = createItem(name, itemType, description, genre, size, measuringUnit, validity, donation);
+
+            donation.setDistributionCenter(distributionCenter);
+            donation.setQuantity(quantity);
+            donation.setItem(item);
 
             DonationDao donationDao = DaoFactory.createDonationDao();
             donationDao.save(donation);
@@ -74,6 +78,8 @@ public class DonationServiceImpl implements DonationService {
             System.out.println("Erro de formatação: os dados foram inseridos inpropriadamente.");
         } catch (NoSuchElementException e) {
             System.out.println("Erro: entrada não esperada.");
+        } catch (StorageLimitException e) {
+            System.out.println(e.getMessage());
         } catch (Exception e) {
             System.out.println("Erro ao criar a doação: " + e.getMessage());
         }
@@ -133,15 +139,26 @@ public class DonationServiceImpl implements DonationService {
 
             if (distributionCenter == null) throw new ResourceNotFoundException("Centro de dist. não encontrado.");
 
+            Integer quantity = Integer.parseInt(getInput("Digite a nova quantidade do item doado: "));
+
+            ItemType itemType = donation.getItem().getItemType();
+
+            // Verifica se a atualização da doação excede o limite de armazenamento do centro de dist.
+            if (isExceedingLimit(distributionCenterId, itemType, quantity)) {
+                throw new StorageLimitException("Erro: quantidade do item excede o limite");
+            }
             donation.setDistributionCenter(distributionCenter);
+            donation.setQuantity(quantity);
 
             DonationDao donationDao = DaoFactory.createDonationDao();
             donationDao.update(donation);
-        } catch (NumberFormatException e) {
-            System.out.println("Erro de formatação: o id deve ser um número.");
+
+            System.out.println("Doação atualizada.");
+        } catch (InputMismatchException | NumberFormatException e) {
+            System.out.println("Erro de formatação: os dados foram inseridos inpropriadamente.");
         } catch (NoSuchElementException e) {
             System.out.println("Erro: entrada não esperada.");
-        } catch (ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException | StorageLimitException e) {
             System.out.println(e.getMessage());
         } catch (Exception e) {
             System.out.println("Erro ao atualizar a doação: " + e.getMessage());
@@ -159,6 +176,8 @@ public class DonationServiceImpl implements DonationService {
 
             DonationDao donationDao = DaoFactory.createDonationDao();
             donationDao.delete(id);
+
+            System.out.println("Doação deletada.");
         } catch (NumberFormatException e) {
             System.out.println("Erro de formatação: o id deve ser um número.");
         } catch (NoSuchElementException e) {
@@ -173,13 +192,14 @@ public class DonationServiceImpl implements DonationService {
     @Override
     public void importCsv() {
         try {
+
             String filePath = "/home/diego/repos/java/flood-shelters/src/main/resources/data/donation.csv";
 
             List<Map<String, String>> lines = CsvUtil.readCsv(filePath);
 
             Map<Long, DistributionCenter> distributionCentersMap = getDistributionCenters();
 
-            List<Donation> donations = new ArrayList<>();
+            DonationDao donationDao = DaoFactory.createDonationDao();
 
             lines.forEach(cols -> {
                 Long distributionCenterId = Long.parseLong(cols.get("distribution_center_id"));
@@ -188,24 +208,28 @@ public class DonationServiceImpl implements DonationService {
                 String description = cols.get("description");
                 ClothingGenre genre = cols.get("genre").isEmpty() ? null : ClothingGenre.valueOf(cols.get("genre"));
                 ClothingSize size = cols.get("size").isEmpty() ? null : ClothingSize.valueOf(cols.get("size"));
-                int quantity = Integer.parseInt(cols.get("quantity"));
                 String measuringUnit = cols.get("measuring_unit");
                 LocalDate validity = cols.get("validity").isEmpty() ? null : LocalDate.parse(cols.get("validity"), dtf);
+                Integer quantity = Integer.parseInt(cols.get("quantity"));
 
                 DistributionCenter distributionCenter = distributionCentersMap.get(distributionCenterId);
 
-                Donation donation = createDonation(distributionCenter);
+                // Verifica se a adição do item excede o limite de armazenamento do centro de dist.
+                if (isExceedingLimit(distributionCenterId, itemType, quantity)) {
+                    throw new StorageLimitException("Erro: quantidade de itens excede o limite");
+                }
+                Donation donation = new Donation();
 
-                Item item = createItem(name, itemType, description, genre, size, quantity, measuringUnit, validity, donation);
+                Item item = createItem(name, itemType, description, genre, size, measuringUnit, validity, donation);
 
-                donation.getItems().add(item);
+                donation.setDistributionCenter(distributionCenter);
+                donation.setQuantity(quantity);
+                donation.setItem(item);
 
-                donations.add(donation);
+                donationDao.save(donation);
             });
-
-            DonationDao donationDao = DaoFactory.createDonationDao();
-            donations.forEach(donationDao::save);
-        } catch (CsvReaderException e) {
+            System.out.println("Doações importadas.");
+        } catch (CsvReaderException | StorageLimitException e) {
             System.out.println(e.getMessage());
         }
     }
@@ -220,6 +244,11 @@ public class DonationServiceImpl implements DonationService {
         return sc.nextLine();
     }
 
+    private DistributionCenter getDistributionCenter(Long id) {
+        DistributionCenterDao distributionCenterDao = DaoFactory.createDistributionCenterDao();
+        return distributionCenterDao.findById(id);
+    }
+
     private Map<Long, DistributionCenter> getDistributionCenters() {
         DistributionCenterDao distributionCenterDao = DaoFactory.createDistributionCenterDao();
         List<DistributionCenter> distributionCenters = distributionCenterDao.findAll();
@@ -231,33 +260,43 @@ public class DonationServiceImpl implements DonationService {
         return distributionCentersMap;
     }
 
-    private DistributionCenter getDistributionCenter(Long id) {
-        DistributionCenterDao distributionCenterDao = DaoFactory.createDistributionCenterDao();
-        return distributionCenterDao.findById(id);
-    }
-
     private Donation getDonation(Long id) {
         DonationDao donationDao = DaoFactory.createDonationDao();
         return donationDao.findById(id);
     }
 
-    private Donation createDonation(DistributionCenter distributionCenter) {
-        Donation donation = new Donation();
-        donation.setDistributionCenter(distributionCenter);
-        return donation;
-    }
-
-    private Item createItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, int quantity, String measuringUnit, LocalDate validity, Donation donation) {
+    private Item createItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity, Donation donation) {
         Item item = new Item();
         item.setName(name);
         item.setItemType(itemType);
         item.setDescription(description);
         item.setGenre(genre);
         item.setSize(size);
-        item.setQuantity(quantity);
         item.setMeasuringUnit(measuringUnit);
         item.setValidity(validity);
         item.setDonation(donation);
         return item;
+    }
+
+    // Verifica se a adição de x quantidade de itens atinge o limite estabelecido por tipo
+    private boolean isExceedingLimit(Long id, ItemType itemType, Integer quantity) {
+        int currentQuantity = getTotalItemsByType(id).getOrDefault(itemType, 0);
+        return (currentQuantity + quantity) > 1000;
+    }
+
+    // Obtém todos os registros de doações e separa a quantidade por tipo de item recebido em um centro de dist.
+    private Map<ItemType, Integer> getTotalItemsByType(Long id) {
+        DonationDao donationDao = DaoFactory.createDonationDao();
+        List<Donation> donations = donationDao.findAll();
+
+        Map<ItemType, Integer> totalItemsByType = new HashMap<>();
+
+        donations.forEach(donation -> {
+            if (donation.getDistributionCenter().getId().equals(id)) {
+                ItemType itemType = donation.getItem().getItemType();
+                totalItemsByType.merge(itemType, donation.getQuantity(), Integer::sum);
+            }
+        });
+        return totalItemsByType;
     }
 }

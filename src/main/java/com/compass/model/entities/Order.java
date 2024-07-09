@@ -7,14 +7,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 @Entity
 @Table(name = "tb_order")
@@ -31,8 +29,11 @@ public class Order implements Serializable {
     @JoinColumn(name = "shelter_id")
     private Shelter shelter;
 
-    @OneToMany(mappedBy = "order")
-    private Set<Item> items = new HashSet<>();
+    @OneToOne
+    @JoinColumn(name = "item_id")
+    private Item item;
+
+    private Integer quantity;
 
     private Boolean accepted;
 
@@ -42,10 +43,11 @@ public class Order implements Serializable {
     public Order() {
     }
 
-    public Order(Long id, Shelter shelter, Set<Item> items, Boolean accepted, String refusalReason) {
+    public Order(Long id, Shelter shelter, Item item, Integer quantity, Boolean accepted, String refusalReason) {
         this.id = id;
         this.shelter = shelter;
-        this.items = items;
+        this.item = item;
+        this.quantity = quantity;
         this.accepted = accepted;
         this.refusalReason = refusalReason;
     }
@@ -66,8 +68,20 @@ public class Order implements Serializable {
         this.shelter = shelter;
     }
 
-    public Set<Item> getItems() {
-        return items;
+    public Item getItem() {
+        return item;
+    }
+
+    public void setItem(Item item) {
+        this.item = item;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
     }
 
     public Boolean getAccepted() {
@@ -104,7 +118,8 @@ public class Order implements Serializable {
         return "Order{" +
                 "id=" + id +
                 ", shelter=" + shelter +
-                ", items=" + items +
+                ", item=" + item +
+                ", quantity=" + quantity +
                 ", accepted=" + accepted +
                 ", refusalReason='" + refusalReason + '\'' +
                 '}';

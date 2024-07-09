@@ -6,6 +6,7 @@ import com.compass.exception.DbIntegrityException;
 import com.compass.model.entities.Donation;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.PersistenceException;
 
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class DonationDaoImpl implements DonationDao {
             transaction.begin();
             em.persist(donation);
             transaction.commit();
-        } catch (Exception e) {
+        } catch (PersistenceException e) {
             if (transaction.isActive()) transaction.rollback();
             throw new DbException(e.getMessage());
         }
@@ -34,7 +35,7 @@ public class DonationDaoImpl implements DonationDao {
     public List<Donation> findAll() {
         try {
             return em.createQuery("SELECT d FROM Donation d", Donation.class).getResultList();
-        } catch (Exception e) {
+        } catch (PersistenceException e) {
             throw new DbException(e.getMessage());
         }
     }
@@ -43,7 +44,7 @@ public class DonationDaoImpl implements DonationDao {
     public Donation findById(Long id) {
         try {
             return em.find(Donation.class, id);
-        } catch (Exception e) {
+        } catch (PersistenceException e) {
             throw new DbException(e.getMessage());
         }
     }
@@ -55,7 +56,7 @@ public class DonationDaoImpl implements DonationDao {
             transaction.begin();
             em.merge(donation);
             transaction.commit();
-        } catch (Exception e) {
+        } catch (PersistenceException e) {
             if (transaction.isActive()) transaction.rollback();
             throw new DbException(e.getMessage());
         }
@@ -69,7 +70,7 @@ public class DonationDaoImpl implements DonationDao {
             Donation donation = em.find(Donation.class, id);
             if (donation != null) em.remove(donation);
             transaction.commit();
-        } catch (Exception e) {
+        } catch (PersistenceException e) {
             if (transaction.isActive()) transaction.rollback();
             throw new DbIntegrityException(e.getMessage());
         }

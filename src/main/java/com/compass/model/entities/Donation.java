@@ -7,14 +7,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 @Entity
 @Table(name = "tb_donation")
@@ -31,16 +29,20 @@ public class Donation implements Serializable {
     @JoinColumn(name = "distribution_center_id")
     private DistributionCenter distributionCenter;
 
-    @OneToMany(mappedBy = "donation", cascade = CascadeType.ALL)
-    private Set<Item> items = new HashSet<>();
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "item_id")
+    private Item item;
+
+    private Integer quantity;
 
     public Donation() {
     }
 
-    public Donation(Long id, DistributionCenter distributionCenter, Set<Item> items) {
+    public Donation(Long id, DistributionCenter distributionCenter, Item item, Integer quantity) {
         this.id = id;
         this.distributionCenter = distributionCenter;
-        this.items = items;
+        this.item = item;
+        this.quantity = quantity;
     }
 
     public Long getId() {
@@ -59,8 +61,20 @@ public class Donation implements Serializable {
         this.distributionCenter = distributionCenter;
     }
 
-    public Set<Item> getItems() {
-        return items;
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+
+    public Item getItem() {
+        return item;
+    }
+
+    public void setItem(Item item) {
+        this.item = item;
     }
 
     @Override
@@ -81,7 +95,8 @@ public class Donation implements Serializable {
         return "Donation{" +
                 "id=" + id +
                 ", distributionCenter=" + distributionCenter +
-                ", items=" + items +
+                ", item=" + item +
+                ", quantity=" + quantity +
                 '}';
     }
 }
