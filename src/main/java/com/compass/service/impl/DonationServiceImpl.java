@@ -16,6 +16,7 @@ import com.compass.util.CsvUtil;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -173,8 +174,9 @@ public class DonationServiceImpl implements DonationService {
             DonationDao donationDao = DaoFactory.createDonationDao();
             DistributionCenterDao distributionCenterDao = DaoFactory.createDistributionCenterDao();
 
+            System.out.println("Insira os dados da transferência");
             Long fromDistributionCenterId = Long.parseLong(getInput("Digite o id do centro que fará a transferência: "));
-            DistributionCenter fromDistributionCenter = findDistributionCenter(distributionCenterDao, fromDistributionCenterId);
+            findDistributionCenter(distributionCenterDao, fromDistributionCenterId);
 
             Long toDistributionCenterId = Long.parseLong(getInput("Digite o id do centro que receberá a transferência: "));
             DistributionCenter toDistributionCenter = findDistributionCenter(distributionCenterDao, toDistributionCenterId);
@@ -271,6 +273,8 @@ public class DonationServiceImpl implements DonationService {
             throw new StorageLimitException("Quantidade solicitada insuficiente no estoque.");
         }
 
+        donations.sort(Comparator.comparing(Donation::getQuantity).reversed());
+
         int remainingQuantity = quantity;
         for (Donation donation : donations) {
             int donationQuantity = donation.getQuantity();
@@ -278,16 +282,15 @@ public class DonationServiceImpl implements DonationService {
             if (donationQuantity > remainingQuantity) {
                 donation.setQuantity(donationQuantity - remainingQuantity);
                 donationDao.update(donation);
+                Donation newDonation = createDonation(donation, toDistributionCenter, remainingQuantity);
+                donationDao.save(newDonation);
                 break;
             } else {
-                // Delete as doações cuja quantidade do item chegou a 0
+                donation.setDistributionCenter(toDistributionCenter);
+                donationDao.update(donation);
                 remainingQuantity -= donationQuantity;
-                donationDao.delete(donation.getId());
             }
         }
-
-        Donation newDonation = createDonation(donations.get(0), toDistributionCenter, quantity);
-        donationDao.save(newDonation);
     }
 
     private Donation createDonation(Donation donation, DistributionCenter distributionCenter, int quantity) {

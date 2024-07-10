@@ -7,6 +7,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.PersistenceException;
 
+import java.util.List;
+
 public class OrderDaoImpl implements OrderDao {
 
     private final EntityManager em;
@@ -24,6 +26,17 @@ public class OrderDaoImpl implements OrderDao {
             transaction.commit();
         } catch (PersistenceException e) {
             if (transaction.isActive()) transaction.rollback();
+            throw new DbException(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<Order> findByShelterId(Long shelterId) {
+        try {
+            return em.createQuery("SELECT o FROM Order o WHERE o.shelter.id = :shelterId", Order.class)
+                    .setParameter("shelterId", shelterId)
+                    .getResultList();
+        } catch (PersistenceException e) {
             throw new DbException(e.getMessage());
         }
     }
