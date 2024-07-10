@@ -29,7 +29,7 @@ public class CsvUtil {
                 lines.add(fields);
             }
         } catch (CsvValidationException | IOException e) {
-            throw new CsvReaderException("Erro de leitura do arquivo csv: " + e.getMessage());
+            throw new CsvReaderException(e.getMessage());
         }
         return lines;
     }

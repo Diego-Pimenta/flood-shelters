@@ -61,10 +61,10 @@ public class ApplicationFeaturesServiceImpl implements ApplicationFeaturesServic
                         running = false;
                         break;
                     default:
-                        System.out.println("Opção inválida, tente novamente.");
+                        System.err.println("Erro: Opção inválida, tente novamente.");
                 }
             } catch (NumberFormatException e) {
-                System.out.println("Entrada inválida, tente novamente.");
+                System.err.println("Erro: Entrada inválida, tente novamente.");
             }
         }
         System.out.println("Sistema encerrado.");
@@ -106,10 +106,10 @@ public class ApplicationFeaturesServiceImpl implements ApplicationFeaturesServic
                     donationService.importCsv();
                     break;
                 default:
-                    System.out.println("Opção inválida, tente novamente.");
+                    System.err.println("Erro: Opção inválida, tente novamente.");
             }
         } catch (NumberFormatException e) {
-            System.out.println("Entrada inválida, tente novamente.");
+            System.out.println("Erro: Entrada inválida, tente novamente.");
         }
     }
 
@@ -143,10 +143,10 @@ public class ApplicationFeaturesServiceImpl implements ApplicationFeaturesServic
                     shelterService.delete();
                     break;
                 default:
-                    System.out.println("Opção inválida, tente novamente.");
+                    System.err.println("Erro: Opção inválida, tente novamente.");
             }
         } catch (NumberFormatException e) {
-            System.out.println("Entrada inválida, tente novamente.");
+            System.err.println("Erro: Entrada inválida, tente novamente.");
         }
     }
 

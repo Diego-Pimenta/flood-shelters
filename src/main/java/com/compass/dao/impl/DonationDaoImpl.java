@@ -6,7 +6,6 @@ import com.compass.exception.DbIntegrityException;
 import com.compass.model.entities.Donation;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceException;
 
 import java.util.List;
@@ -53,7 +52,7 @@ public class DonationDaoImpl implements DonationDao {
     @Override
     public List<Donation> findByItemName(String itemName) {
         try {
-            return em.createQuery("SELECT d FROM Donation d WHERE d.item.name = :itemName", Donation.class)
+            return em.createQuery("SELECT d FROM Donation d WHERE LOWER(d.item.name) = LOWER(:itemName)", Donation.class)
                     .setParameter("itemName", itemName)
                     .getResultList();
         } catch (PersistenceException e) {
@@ -75,7 +74,7 @@ public class DonationDaoImpl implements DonationDao {
     @Override
     public List<Donation> findByItemNameAndDistributionCenterId(String itemName, Long distributionCenterId) {
         try {
-            return em.createQuery("SELECT d FROM Donation d WHERE d.item.name = :itemName AND d.distributionCenter.id = :distributionCenterId", Donation.class)
+            return em.createQuery("SELECT d FROM Donation d WHERE LOWER(d.item.name) = LOWER(:itemName) AND d.distributionCenter.id = :distributionCenterId", Donation.class)
                     .setParameter("itemName", itemName)
                     .setParameter("distributionCenterId", distributionCenterId)
                     .getResultList();
