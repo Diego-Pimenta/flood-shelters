@@ -6,6 +6,7 @@ import com.compass.exception.DbIntegrityException;
 import com.compass.model.entities.Donation;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceException;
 
 import java.util.List;
@@ -44,6 +45,40 @@ public class DonationDaoImpl implements DonationDao {
     public Donation findById(Long id) {
         try {
             return em.find(Donation.class, id);
+        } catch (PersistenceException e) {
+            throw new DbException(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<Donation> findByItemName(String itemName) {
+        try {
+            return em.createQuery("SELECT d FROM Donation d WHERE d.item.name = :itemName", Donation.class)
+                    .setParameter("itemName", itemName)
+                    .getResultList();
+        } catch (PersistenceException e) {
+            throw new DbException(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<Donation> findByDistributionCenterId(Long distributionCenterId) {
+        try {
+            return em.createQuery("SELECT d FROM Donation d WHERE d.distributionCenter.id = :distributionCenterId", Donation.class)
+                    .setParameter("distributionCenterId", distributionCenterId)
+                    .getResultList();
+        } catch (PersistenceException e) {
+            throw new DbException(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<Donation> findByItemNameAndDistributionCenterId(String itemName, Long distributionCenterId) {
+        try {
+            return em.createQuery("SELECT d FROM Donation d WHERE d.item.name = :itemName AND d.distributionCenter.id = :distributionCenterId", Donation.class)
+                    .setParameter("itemName", itemName)
+                    .setParameter("distributionCenterId", distributionCenterId)
+                    .getResultList();
         } catch (PersistenceException e) {
             throw new DbException(e.getMessage());
         }

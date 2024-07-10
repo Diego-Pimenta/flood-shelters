@@ -22,15 +22,17 @@ public class ApplicationFeaturesServiceImpl implements ApplicationFeaturesServic
     public void start() {
         DaoFactory.initDbOperations();
 
+        clearScreen();
+
         boolean running = true;
         while (running) {
-            clearScreen();
             System.out.println("Bem-vindo ao menu do sistema");
             System.out.println("1. Registro de doações");
-            System.out.println("2. Registro de dbrigos");
+            System.out.println("2. Registro de abrigos");
             System.out.println("3. Ordem de pedido");
             System.out.println("4. Checkout de itens");
             System.out.println("5. Transferência de doações");
+            System.out.println("6. Limpar console");
             System.out.println("0. Sair");
             System.out.print("Escolha uma opção: ");
 
@@ -51,6 +53,9 @@ public class ApplicationFeaturesServiceImpl implements ApplicationFeaturesServic
                         break;
                     case 5:
                         transferDonations();
+                        break;
+                    case 6:
+                        clearScreen();
                         break;
                     case 0:
                         running = false;
@@ -147,16 +152,19 @@ public class ApplicationFeaturesServiceImpl implements ApplicationFeaturesServic
 
     @Override
     public void orderRequest() {
+        clearScreen();
         orderService.orderRequest();
     }
 
     @Override
     public void checkoutItems() {
+        clearScreen();
         orderService.checkoutItem();
     }
 
     @Override
     public void transferDonations() {
+        clearScreen();
         donationService.transferDonation();
     }
 
