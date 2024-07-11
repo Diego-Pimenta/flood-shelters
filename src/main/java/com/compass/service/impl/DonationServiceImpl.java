@@ -221,16 +221,7 @@ public class DonationServiceImpl implements DonationService {
     }
 
     private Item createItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity, Donation donation) {
-        Item item = new Item();
-        item.setName(name);
-        item.setItemType(itemType);
-        item.setDescription(description);
-        item.setGenre(genre);
-        item.setSize(size);
-        item.setMeasuringUnit(measuringUnit);
-        item.setValidity(validity);
-        item.setDonation(donation);
-        return item;
+        return new Item(null, name, itemType, description, genre, size, measuringUnit, validity, donation, null);
     }
 
     private Item createItem(Donation donation, Map<String, String> cols) {
