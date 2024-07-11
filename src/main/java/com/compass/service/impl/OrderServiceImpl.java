@@ -43,7 +43,7 @@ public class OrderServiceImpl implements OrderService {
                 throw new ResourceNotFoundException("Nenhum item com o nome informado foi encontrado.");
             }
 
-            System.out.println("Lista de centros de dist. que possuem o item");
+            System.out.println("Lista de centros de distribuição que possuem o item");
             donations.sort(Comparator.comparing(Donation::getQuantity).reversed());
             donations.forEach(System.out::println);
 
@@ -63,9 +63,9 @@ public class OrderServiceImpl implements OrderService {
     public void checkoutItem() {
         try {
             OrderDao orderDao = DaoFactory.createOrderDao();
+            DonationDao donationDao = DaoFactory.createDonationDao();
 
-            List<Order> orders = orderDao.findAll();
-            orders.forEach(System.out::println);
+            printOrders(orderDao);
 
             Long orderId = Long.parseLong(getInput("Digite o id do pedido que será analisado: "));
             Order order = findOrder(orderDao, orderId);
@@ -82,9 +82,7 @@ public class OrderServiceImpl implements OrderService {
                 if (isExceedingLimit(orderDao, order.getShelter().getId(), order.getItem().getItemType(), order.getQuantity())) {
                     throw new StorageLimitException("Quantidade do item excede o limite de estoque.");
                 }
-                order.setAccepted(true);
-                order.setRefusalReason(null);
-                orderDao.update(order);
+                processOrder(orderDao, donationDao, order);
             }
 
             System.out.println("Pedido atualizado com sucesso.");
@@ -141,6 +139,19 @@ public class OrderServiceImpl implements OrderService {
         return totalItemsByType;
     }
 
+    private void printOrders(OrderDao orderDao) {
+        List<Order> orders = orderDao.findAll()
+                .stream()
+                .filter(o -> !o.getAccepted() && o.getRefusalReason() == null)
+                .toList();
+
+        if (orders.isEmpty()) {
+            throw new ResourceNotFoundException("Nenhum pedido pendente.");
+        }
+
+        orders.forEach(System.out::println);
+    }
+
     private void orderRequest(OrderDao orderDao, List<Donation> donations, Shelter shelter, int quantity) {
         int totalDCQuantity = donations.stream().mapToInt(Donation::getQuantity).sum();
 
@@ -163,25 +174,40 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    private void processOrder(OrderDao orderDao, DonationDao donationDao, Order order) {
+        List<Donation> donations = donationDao.findByItemName(order.getItem().getName());
+
+//        donations
+//                .stream()
+//                .filter(d -> {
+//                    if (d.getItem().getName().equals(order.getItem().getName() && d.getItem().getItemType().equals(order.getItem().getItemType()))) {
+//                        return true;
+//                    } else {
+//                        return false;
+//                    }
+//                })
+//                .findFirst()
+//                .orElseThrow();
+
+        order.setAccepted(true);
+        order.setRefusalReason(null);
+        orderDao.update(order);
+    }
+
     private Order createOrder(Donation donation, Shelter shelter, int quantity) {
-        Order newOrder = new Order();
-        newOrder.setShelter(shelter);
-        newOrder.setQuantity(quantity);
-        newOrder.setAccepted(false);
-        newOrder.setItem(createItem(
+        Item item = createItem(
                 donation.getItem().getName(),
                 donation.getItem().getItemType(),
                 donation.getItem().getDescription(),
                 donation.getItem().getGenre(),
                 donation.getItem().getSize(),
                 donation.getItem().getMeasuringUnit(),
-                donation.getItem().getValidity(),
-                newOrder
-        ));
-        return newOrder;
+                donation.getItem().getValidity()
+        );
+        return new Order(null, shelter, item, quantity, false, null);
     }
 
-    private Item createItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity, Order order) {
-        return new Item(null, name, itemType, description, genre, size, measuringUnit, validity, null, order);
+    private Item createItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity) {
+        return new Item(null, name, itemType, description, genre, size, measuringUnit, validity, null, null);
     }
 }

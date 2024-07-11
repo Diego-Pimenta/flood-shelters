@@ -2,6 +2,7 @@ package com.compass.dao;
 
 import com.compass.dao.impl.DistributionCenterDaoImpl;
 import com.compass.dao.impl.DonationDaoImpl;
+import com.compass.dao.impl.ItemDaoImpl;
 import com.compass.dao.impl.OrderDaoImpl;
 import com.compass.dao.impl.ShelterDaoImpl;
 import jakarta.persistence.EntityManager;
@@ -32,6 +33,10 @@ public class DaoFactory {
 
     public static OrderDao createOrderDao() {
         return new OrderDaoImpl(em);
+    }
+
+    public static ItemDao createItemDao() {
+        return new ItemDaoImpl(em);
     }
 
     public static void closeAll() {

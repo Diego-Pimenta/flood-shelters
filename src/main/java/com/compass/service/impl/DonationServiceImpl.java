@@ -3,6 +3,7 @@ package com.compass.service.impl;
 import com.compass.dao.DaoFactory;
 import com.compass.dao.DistributionCenterDao;
 import com.compass.dao.DonationDao;
+import com.compass.dao.ItemDao;
 import com.compass.exception.ResourceNotFoundException;
 import com.compass.exception.StorageLimitException;
 import com.compass.model.entities.DistributionCenter;
@@ -38,9 +39,7 @@ public class DonationServiceImpl implements DonationService {
             Long distributionCenterId = Long.parseLong(getInput("Digite o id do centro de distribuição: "));
             DistributionCenter distributionCenter = findDistributionCenter(distributionCenterDao, distributionCenterId);
 
-            Donation donation = new Donation();
-            donation.setDistributionCenter(distributionCenter);
-            donation.setQuantity(Integer.parseInt(getInput("Digite a quantidade do item doado: ")));
+            Integer quantity = Integer.parseInt(getInput("Digite a quantidade do item doado: "));
 
             String name = getInput("Digite o nome do item doado: ");
             ItemType itemType = ItemType.valueOf(getInput("Digite o tipo do item doado (CLOTHING, HYGIENE, FOOD): "));
@@ -57,12 +56,12 @@ public class DonationServiceImpl implements DonationService {
                 validity = LocalDate.parse(getInput("Digite a validade do alimento doado (yyyy-MM-dd): "), dtf);
             }
 
-            Item item = createItem(name, itemType, description, genre, size, measuringUnit, validity, donation);
-            donation.setItem(item);
-
-            if (isExceedingLimit(donationDao, distributionCenterId, itemType, donation.getQuantity())) {
+            if (isExceedingLimit(donationDao, distributionCenterId, itemType, quantity)) {
                 throw new StorageLimitException("Quantidade do item excede o limite de estoque");
             }
+
+            Item item = findOrCreateItem(name, itemType, description, genre, size, measuringUnit, validity);
+            Donation donation = new Donation(null, distributionCenter, item, quantity);
 
             donationDao.save(donation);
             System.out.println("Doação registrada.");
@@ -151,13 +150,12 @@ public class DonationServiceImpl implements DonationService {
 
             Map<Long, DistributionCenter> distributionCentersMap = getDistributionCenters(distributionCenterDao);
             lines.forEach(cols -> {
-                Donation donation = new Donation();
-                donation.setDistributionCenter(distributionCentersMap.get(Long.parseLong(cols.get("distribution_center_id"))));
-                donation.setQuantity(Integer.parseInt(cols.get("quantity")));
-                Item item = createItem(donation, cols);
-                donation.setItem(item);
+                DistributionCenter distributionCenter = distributionCentersMap.get(Long.parseLong(cols.get("distribution_center_id")));
+                Item item = findOrCreateItem(cols);
+                Integer quantity = Integer.parseInt(cols.get("quantity"));
+                Donation donation = new Donation(null, distributionCenter, item, quantity);
 
-                if (isExceedingLimit(donationDao, donation.getDistributionCenter().getId(), item.getItemType(), donation.getQuantity())) {
+                if (isExceedingLimit(donationDao, distributionCenter.getId(), item.getItemType(), quantity)) {
                     throw new StorageLimitException("Quantidade dos itens excede o limite de estoque");
                 }
                 donationDao.save(donation);
@@ -220,11 +218,30 @@ public class DonationServiceImpl implements DonationService {
         return donation;
     }
 
-    private Item createItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity, Donation donation) {
-        return new Item(null, name, itemType, description, genre, size, measuringUnit, validity, donation, null);
+    // TODO: Otimização do findOrCreateItem(), corrigir findByItemValues()
+
+    private Item findOrCreateItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity) {
+        ItemDao itemDao = DaoFactory.createItemDao();
+
+        Item item1 = itemDao.findByItemValues(name, itemType, description, genre, size, measuringUnit, validity);
+        System.out.println(item1);
+
+        List<Item> items = itemDao.findAll();
+        for (Item item : items) {
+            if (item.getName().equals(name) &&
+                    item.getItemType() == itemType &&
+                    item.getDescription().equals(description) &&
+                    item.getGenre() == genre &&
+                    item.getSize() == size &&
+                    item.getMeasuringUnit().equals(measuringUnit) &&
+                    (item.getValidity() == null ? validity == null : item.getValidity().equals(validity))) {
+                return item;
+            }
+        }
+        return new Item(null, name, itemType, description, genre, size, measuringUnit, validity, null, null);
     }
 
-    private Item createItem(Donation donation, Map<String, String> cols) {
+    private Item findOrCreateItem(Map<String, String> cols) {
         String name = cols.get("name");
         ItemType itemType = ItemType.valueOf(cols.get("item_type"));
         String description = cols.get("description");
@@ -232,7 +249,7 @@ public class DonationServiceImpl implements DonationService {
         ClothingSize size = cols.get("size").isEmpty() ? null : ClothingSize.valueOf(cols.get("size"));
         String measuringUnit = cols.get("measuring_unit");
         LocalDate validity = cols.get("validity").isEmpty() ? null : LocalDate.parse(cols.get("validity"), dtf);
-        return createItem(name, itemType, description, genre, size, measuringUnit, validity, donation);
+        return findOrCreateItem(name, itemType, description, genre, size, measuringUnit, validity);
     }
 
     private Map<Long, DistributionCenter> getDistributionCenters(DistributionCenterDao distributionCenterDao) {
@@ -285,19 +302,15 @@ public class DonationServiceImpl implements DonationService {
     }
 
     private Donation createDonation(Donation donation, DistributionCenter distributionCenter, int quantity) {
-        Donation newDonation = new Donation();
-        newDonation.setDistributionCenter(distributionCenter);
-        newDonation.setQuantity(quantity);
-        newDonation.setItem(createItem(
+        Item item = findOrCreateItem(
                 donation.getItem().getName(),
                 donation.getItem().getItemType(),
                 donation.getItem().getDescription(),
                 donation.getItem().getGenre(),
                 donation.getItem().getSize(),
                 donation.getItem().getMeasuringUnit(),
-                donation.getItem().getValidity(),
-                newDonation
-        ));
-        return newDonation;
+                donation.getItem().getValidity()
+        );
+        return new Donation(null, distributionCenter, item, quantity);
     }
 }

@@ -86,7 +86,6 @@ public class DistributionCenter implements Serializable {
         return "DistributionCenter{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", address='" + address + '\'' +
                 '}';
     }
 }

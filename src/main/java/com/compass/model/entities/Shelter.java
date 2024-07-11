@@ -141,12 +141,6 @@ public class Shelter implements Serializable {
         return "Shelter{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", address='" + address + '\'' +
-                ", responsible='" + responsible + '\'' +
-                ", phoneNumber='" + phoneNumber + '\'' +
-                ", email='" + email + '\'' +
-                ", capacity=" + capacity +
-                ", occupation=" + occupation +
                 '}';
     }
 }
