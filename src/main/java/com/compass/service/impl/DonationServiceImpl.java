@@ -60,7 +60,10 @@ public class DonationServiceImpl implements DonationService {
                 throw new StorageLimitException("Quantidade do item excede o limite de estoque");
             }
 
-            Item item = findOrCreateItem(name, itemType, description, genre, size, measuringUnit, validity);
+            Item item = findItem(name, itemType, description, genre, size, measuringUnit, validity);
+            if (item == null) {
+                item = createItem(name, itemType, description, genre, size, measuringUnit, validity);
+            }
             Donation donation = new Donation(null, distributionCenter, item, quantity);
 
             donationDao.save(donation);
@@ -151,7 +154,7 @@ public class DonationServiceImpl implements DonationService {
             Map<Long, DistributionCenter> distributionCentersMap = getDistributionCenters(distributionCenterDao);
             lines.forEach(cols -> {
                 DistributionCenter distributionCenter = distributionCentersMap.get(Long.parseLong(cols.get("distribution_center_id")));
-                Item item = findOrCreateItem(cols);
+                Item item = findItem(cols);
                 Integer quantity = Integer.parseInt(cols.get("quantity"));
                 Donation donation = new Donation(null, distributionCenter, item, quantity);
 
@@ -241,7 +244,25 @@ public class DonationServiceImpl implements DonationService {
         return new Item(null, name, itemType, description, genre, size, measuringUnit, validity, null, null);
     }
 
-    private Item findOrCreateItem(Map<String, String> cols) {
+    private Item findItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity) {
+        ItemDao itemDao = DaoFactory.createItemDao();
+
+        List<Item> items = itemDao.findAll();
+        for (Item item : items) {
+            if (item.getName().equals(name) &&
+                    item.getItemType() == itemType &&
+                    item.getDescription().equals(description) &&
+                    item.getGenre() == genre &&
+                    item.getSize() == size &&
+                    item.getMeasuringUnit().equals(measuringUnit) &&
+                    (item.getValidity() == null ? validity == null : item.getValidity().equals(validity))) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private Item findItem(Map<String, String> cols) {
         String name = cols.get("name");
         ItemType itemType = ItemType.valueOf(cols.get("item_type"));
         String description = cols.get("description");
@@ -249,7 +270,16 @@ public class DonationServiceImpl implements DonationService {
         ClothingSize size = cols.get("size").isEmpty() ? null : ClothingSize.valueOf(cols.get("size"));
         String measuringUnit = cols.get("measuring_unit");
         LocalDate validity = cols.get("validity").isEmpty() ? null : LocalDate.parse(cols.get("validity"), dtf);
-        return findOrCreateItem(name, itemType, description, genre, size, measuringUnit, validity);
+
+        Item item = findItem(name, itemType, description, genre, size, measuringUnit, validity);
+        if (item == null) {
+            item = createItem(name, itemType, description, genre, size, measuringUnit, validity);
+        }
+        return item;
+    }
+
+    private Item createItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity) {
+        return new Item(null, name, itemType, description, genre, size, measuringUnit, validity, null, null);
     }
 
     private Map<Long, DistributionCenter> getDistributionCenters(DistributionCenterDao distributionCenterDao) {
@@ -302,15 +332,18 @@ public class DonationServiceImpl implements DonationService {
     }
 
     private Donation createDonation(Donation donation, DistributionCenter distributionCenter, int quantity) {
-        Item item = findOrCreateItem(
-                donation.getItem().getName(),
-                donation.getItem().getItemType(),
-                donation.getItem().getDescription(),
-                donation.getItem().getGenre(),
-                donation.getItem().getSize(),
-                donation.getItem().getMeasuringUnit(),
-                donation.getItem().getValidity()
-        );
+        String name = donation.getItem().getName();
+        ItemType itemType = donation.getItem().getItemType();
+        String description = donation.getItem().getDescription();
+        ClothingGenre genre = donation.getItem().getGenre();
+        ClothingSize size = donation.getItem().getSize();
+        String measuringUnit = donation.getItem().getMeasuringUnit();
+        LocalDate validity = donation.getItem().getValidity();
+
+        Item item = findItem(name, itemType, description, genre, size, measuringUnit, validity);
+        if (item == null) {
+            item = createItem(name, itemType, description, genre, size, measuringUnit, validity);
+        }
         return new Donation(null, distributionCenter, item, quantity);
     }
 }
