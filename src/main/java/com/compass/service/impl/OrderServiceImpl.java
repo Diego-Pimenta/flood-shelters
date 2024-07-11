@@ -61,12 +61,51 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void checkoutItem() {
+        try {
+            OrderDao orderDao = DaoFactory.createOrderDao();
 
+            List<Order> orders = orderDao.findAll();
+            orders.forEach(System.out::println);
+
+            Long orderId = Long.parseLong(getInput("Digite o id do pedido que será analisado: "));
+            Order order = findOrder(orderDao, orderId);
+
+            Boolean accepted = parseBoolean(getInput("O pedido será aceito ou recusado (Y/N)? "));
+            if (accepted == null) {
+                throw new IllegalArgumentException("Entrada inválida, tente novamente.");
+            }
+
+            if (!accepted) {
+                order.setRefusalReason(getInput("Informe o motivo da recusa: "));
+                orderDao.update(order);
+            } else {
+                if (isExceedingLimit(orderDao, order.getShelter().getId(), order.getItem().getItemType(), order.getQuantity())) {
+                    throw new StorageLimitException("Quantidade do item excede o limite de estoque.");
+                }
+                order.setAccepted(true);
+                order.setRefusalReason(null);
+                orderDao.update(order);
+            }
+
+            System.out.println("Pedido atualizado com sucesso.");
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+        }
     }
 
     private String getInput(String prompt) {
         System.out.print(prompt);
         return sc.nextLine();
+    }
+
+    private Boolean parseBoolean(String input) {
+        if (input.equalsIgnoreCase("Y")) {
+            return true;
+        } else if (input.equalsIgnoreCase("N")) {
+            return false;
+        } else {
+            return null;
+        }
     }
 
     private Shelter findShelter(ShelterDao shelterDao, Long id) {
@@ -75,6 +114,14 @@ public class OrderServiceImpl implements OrderService {
             throw new ResourceNotFoundException("Abrigo não encontrado.");
         }
         return shelter;
+    }
+
+    private Order findOrder(OrderDao orderDao, Long id) {
+        Order order = orderDao.findById(id);
+        if (order == null) {
+            throw new ResourceNotFoundException("Pedido não encontrado.");
+        }
+        return order;
     }
 
     private boolean isExceedingLimit(OrderDao orderDao, Long shelterId, ItemType itemType, Integer quantity) {
@@ -86,8 +133,10 @@ public class OrderServiceImpl implements OrderService {
         List<Order> orders = orderDao.findByShelterId(shelterId);
         Map<ItemType, Integer> totalItemsByType = new HashMap<>();
         orders.forEach(order -> {
-            ItemType itemType = order.getItem().getItemType();
-            totalItemsByType.merge(itemType, order.getQuantity(), Integer::sum);
+            if (order.getAccepted()) {
+                ItemType itemType = order.getItem().getItemType();
+                totalItemsByType.merge(itemType, order.getQuantity(), Integer::sum);
+            }
         });
         return totalItemsByType;
     }

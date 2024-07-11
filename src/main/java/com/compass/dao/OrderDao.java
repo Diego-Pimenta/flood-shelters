@@ -7,5 +7,8 @@ import java.util.List;
 public interface OrderDao {
 
     void save(Order order);
+    List<Order> findAll();
+    Order findById(Long id);
     List<Order> findByShelterId(Long shelterId);
+    void update(Order order);
 }
