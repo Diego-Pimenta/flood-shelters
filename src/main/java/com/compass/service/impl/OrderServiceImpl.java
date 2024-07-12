@@ -67,6 +67,10 @@ public class OrderServiceImpl implements OrderService {
             DonationDao donationDao = DaoFactory.createDonationDao();
 
             List<Order> orders = findOrders(orderDao);
+            if (orders.isEmpty()) {
+                System.out.println("Nenhum pedido pendente.");
+                return;
+            }
             orders.forEach(System.out::println);
 
             Long orderId = Long.parseLong(getInput("Digite o id do pedido que será analisado: "));
@@ -125,14 +129,10 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private List<Order> findOrders(OrderDao orderDao) {
-        List<Order> orders = orderDao.findAll()
+        return orderDao.findAll()
                 .stream()
                 .filter(o -> !o.getAccepted() && o.getRefusalReason() == null)
                 .toList();
-        if (orders.isEmpty()) {
-            throw new ResourceNotFoundException("Nenhum pedido pendente.");
-        }
-        return orders;
     }
 
     private Item findItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity) {
@@ -159,12 +159,9 @@ public class OrderServiceImpl implements OrderService {
     private Map<ItemType, Integer> getTotalItemsByType(OrderDao orderDao, Long shelterId) {
         List<Order> orders = orderDao.findByShelterId(shelterId);
         Map<ItemType, Integer> totalItemsByType = new HashMap<>();
-        orders.forEach(order -> {
-            if (order.getAccepted()) {
-                ItemType itemType = order.getItem().getItemType();
-                totalItemsByType.merge(itemType, order.getQuantity(), Integer::sum);
-            }
-        });
+        orders.stream()
+                .filter(Order::getAccepted)
+                .forEach(o -> totalItemsByType.merge(o.getItem().getItemType(), o.getQuantity(), Integer::sum));
         return totalItemsByType;
     }
 

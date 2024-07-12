@@ -269,14 +269,11 @@ public class DonationServiceImpl implements DonationService {
     private Map<ItemType, Integer> getTotalItemsByType(DonationDao donationDao, Long distributionCenterId) {
         List<Donation> donations = donationDao.findByDistributionCenterId(distributionCenterId);
         Map<ItemType, Integer> totalItemsByType = new HashMap<>();
-        donations.forEach(donation -> {
-            ItemType itemType = donation.getItem().getItemType();
-            totalItemsByType.merge(itemType, donation.getQuantity(), Integer::sum);
-        });
+        donations.forEach(d -> totalItemsByType.merge(d.getItem().getItemType(), d.getQuantity(), Integer::sum));
         return totalItemsByType;
     }
 
-    private void transferDonation(DonationDao donationDao, List<Donation> donations, DistributionCenter toDistributionCenter, int quantity) {
+    private void transferDonation(DonationDao donationDao, List<Donation> donations, DistributionCenter toDistributionCenter, Integer quantity) {
         int totalDCQuantity = donations.stream().mapToInt(Donation::getQuantity).sum();
 
         if (quantity > totalDCQuantity) {
@@ -304,7 +301,7 @@ public class DonationServiceImpl implements DonationService {
         }
     }
 
-    private Donation createDonation(Donation donation, DistributionCenter distributionCenter, int quantity) {
+    private Donation createDonation(Donation donation, DistributionCenter distributionCenter, Integer quantity) {
         Item item = findItem(donation.getItem().getName(),
                 donation.getItem().getItemType(),
                 donation.getItem().getDescription(),
