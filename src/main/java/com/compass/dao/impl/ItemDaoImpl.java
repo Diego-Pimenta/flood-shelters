@@ -32,13 +32,13 @@ public class ItemDaoImpl implements ItemDao {
     public Item findByItemValues(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity) {
         try {
             return em.createQuery("SELECT i FROM Item i " +
-                            "WHERE i.name = :name " +
-                            "AND i.itemType = :itemType " +
-                            "AND i.description = :description " +
-                            "AND i.genre = :genre " +
-                            "AND i.size = :size " +
-                            "AND i.measuringUnit = :measuringUnit " +
-                            "AND (i.validity IS NULL AND :validity IS NULL OR i.validity = :validity)",
+                                    "WHERE i.name = :name " +
+                                    "AND i.itemType = :itemType " +
+                                    "AND i.description = :description " +
+                                    "AND i.genre = :genre " +
+                                    "AND i.size = :size " +
+                                    "AND i.measuringUnit = :measuringUnit " +
+                                    "AND i.validity = :validity",
                             Item.class)
                     .setParameter("name", name)
                     .setParameter("itemType", itemType)

@@ -61,9 +61,6 @@ public class DonationServiceImpl implements DonationService {
             }
 
             Item item = findItem(name, itemType, description, genre, size, measuringUnit, validity);
-            if (item == null) {
-                item = createItem(name, itemType, description, genre, size, measuringUnit, validity);
-            }
             Donation donation = new Donation(null, distributionCenter, item, quantity);
 
             donationDao.save(donation);
@@ -221,45 +218,25 @@ public class DonationServiceImpl implements DonationService {
         return donation;
     }
 
-    // TODO: Otimização do findOrCreateItem(), corrigir findByItemValues()
-
-    private Item findOrCreateItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity) {
-        ItemDao itemDao = DaoFactory.createItemDao();
-
-        Item item1 = itemDao.findByItemValues(name, itemType, description, genre, size, measuringUnit, validity);
-        System.out.println(item1);
-
-        List<Item> items = itemDao.findAll();
-        for (Item item : items) {
-            if (item.getName().equals(name) &&
-                    item.getItemType() == itemType &&
-                    item.getDescription().equals(description) &&
-                    item.getGenre() == genre &&
-                    item.getSize() == size &&
-                    item.getMeasuringUnit().equals(measuringUnit) &&
-                    (item.getValidity() == null ? validity == null : item.getValidity().equals(validity))) {
-                return item;
-            }
-        }
-        return new Item(null, name, itemType, description, genre, size, measuringUnit, validity, null, null);
-    }
+    // TODO: Otimização do findItem(), corrigir findByItemValues() do ItemDao
 
     private Item findItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity) {
         ItemDao itemDao = DaoFactory.createItemDao();
 
+//        Item item1 = itemDao.findByItemValues(name, itemType, description, genre, size, measuringUnit, validity);
+//        System.out.println(item1);
+
         List<Item> items = itemDao.findAll();
-        for (Item item : items) {
-            if (item.getName().equals(name) &&
-                    item.getItemType() == itemType &&
-                    item.getDescription().equals(description) &&
-                    item.getGenre() == genre &&
-                    item.getSize() == size &&
-                    item.getMeasuringUnit().equals(measuringUnit) &&
-                    (item.getValidity() == null ? validity == null : item.getValidity().equals(validity))) {
-                return item;
-            }
-        }
-        return null;
+        return items.stream()
+                .filter(item -> item.getName().equals(name) &&
+                        item.getItemType() == itemType &&
+                        item.getDescription().equals(description) &&
+                        item.getGenre() == genre &&
+                        item.getSize() == size &&
+                        item.getMeasuringUnit().equals(measuringUnit) &&
+                        (item.getValidity() == null ? validity == null : item.getValidity().equals(validity)))
+                .findFirst()
+                .orElse(createItem(name, itemType, description, genre, size, measuringUnit, validity));
     }
 
     private Item findItem(Map<String, String> cols) {
@@ -270,12 +247,7 @@ public class DonationServiceImpl implements DonationService {
         ClothingSize size = cols.get("size").isEmpty() ? null : ClothingSize.valueOf(cols.get("size"));
         String measuringUnit = cols.get("measuring_unit");
         LocalDate validity = cols.get("validity").isEmpty() ? null : LocalDate.parse(cols.get("validity"), dtf);
-
-        Item item = findItem(name, itemType, description, genre, size, measuringUnit, validity);
-        if (item == null) {
-            item = createItem(name, itemType, description, genre, size, measuringUnit, validity);
-        }
-        return item;
+        return findItem(name, itemType, description, genre, size, measuringUnit, validity);
     }
 
     private Item createItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity) {
@@ -320,6 +292,7 @@ public class DonationServiceImpl implements DonationService {
             if (donationQuantity > remainingQuantity) {
                 donation.setQuantity(donationQuantity - remainingQuantity);
                 donationDao.update(donation);
+
                 Donation newDonation = createDonation(donation, toDistributionCenter, remainingQuantity);
                 donationDao.save(newDonation);
                 break;
@@ -332,18 +305,13 @@ public class DonationServiceImpl implements DonationService {
     }
 
     private Donation createDonation(Donation donation, DistributionCenter distributionCenter, int quantity) {
-        String name = donation.getItem().getName();
-        ItemType itemType = donation.getItem().getItemType();
-        String description = donation.getItem().getDescription();
-        ClothingGenre genre = donation.getItem().getGenre();
-        ClothingSize size = donation.getItem().getSize();
-        String measuringUnit = donation.getItem().getMeasuringUnit();
-        LocalDate validity = donation.getItem().getValidity();
-
-        Item item = findItem(name, itemType, description, genre, size, measuringUnit, validity);
-        if (item == null) {
-            item = createItem(name, itemType, description, genre, size, measuringUnit, validity);
-        }
+        Item item = findItem(donation.getItem().getName(),
+                donation.getItem().getItemType(),
+                donation.getItem().getDescription(),
+                donation.getItem().getGenre(),
+                donation.getItem().getSize(),
+                donation.getItem().getMeasuringUnit(),
+                donation.getItem().getValidity());
         return new Donation(null, distributionCenter, item, quantity);
     }
 }

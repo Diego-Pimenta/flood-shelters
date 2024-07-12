@@ -1,5 +1,10 @@
 distribution_center_id,name,item_type,description,genre,size,measuring_unit,validity,quantity
+1,T-Shirt,CLOTHING,John John,M,M,Units,,50
+2,Jeans,CLOTHING,Hering,F,S,Units,,30
+3,Jacket,CLOTHING,Columbia,M,L,Units,,20
 1,Soap,HYGIENE,Dolve,,,Units,,100
-1,Soap,HYGIENE,Dolve,,,Units,,150
-2,Soap,HYGIENE,Dolve,,,Units,,100
-2,Soap,HYGIENE,Dolve,,,Units,,150
+2,Toothbrush,HYGIENE,Colgate,,,Units,,200
+3,Toothpaste,HYGIENE,Oral-B,,,Units,,150
+1,Rice,FOOD,Urbano,,,1kg,2024-12-31,200
+2,Beans,FOOD,Camil,,,1kg,2024-12-31,150
+3,Sugar,FOOD,União,,,1kg,2024-12-31,100

@@ -2,6 +2,7 @@ package com.compass.service.impl;
 
 import com.compass.dao.DaoFactory;
 import com.compass.dao.DonationDao;
+import com.compass.dao.ItemDao;
 import com.compass.dao.OrderDao;
 import com.compass.dao.ShelterDao;
 import com.compass.exception.ResourceNotFoundException;
@@ -53,7 +54,7 @@ public class OrderServiceImpl implements OrderService {
             }
 
             orderRequest(orderDao, donations, shelter, quantity);
-            System.out.println("Order de pedido realizado.");
+            System.out.println("Ordem de pedido realizada.");
         } catch (Exception e) {
             System.err.println("Erro: " + e.getMessage());
         }
@@ -65,7 +66,8 @@ public class OrderServiceImpl implements OrderService {
             OrderDao orderDao = DaoFactory.createOrderDao();
             DonationDao donationDao = DaoFactory.createDonationDao();
 
-            printOrders(orderDao);
+            List<Order> orders = findOrders(orderDao);
+            orders.forEach(System.out::println);
 
             Long orderId = Long.parseLong(getInput("Digite o id do pedido que será analisado: "));
             Order order = findOrder(orderDao, orderId);
@@ -87,7 +89,7 @@ public class OrderServiceImpl implements OrderService {
 
             System.out.println("Pedido atualizado com sucesso.");
         } catch (Exception e) {
-            System.err.println(e.getMessage());
+            System.err.println("Erro: " + e.getMessage());
         }
     }
 
@@ -122,6 +124,33 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
+    private List<Order> findOrders(OrderDao orderDao) {
+        List<Order> orders = orderDao.findAll()
+                .stream()
+                .filter(o -> !o.getAccepted() && o.getRefusalReason() == null)
+                .toList();
+        if (orders.isEmpty()) {
+            throw new ResourceNotFoundException("Nenhum pedido pendente.");
+        }
+        return orders;
+    }
+
+    private Item findItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity) {
+        ItemDao itemDao = DaoFactory.createItemDao();
+
+        List<Item> items = itemDao.findAll();
+        return items.stream()
+                .filter(item -> item.getName().equals(name) &&
+                        item.getItemType() == itemType &&
+                        item.getDescription().equals(description) &&
+                        item.getGenre() == genre &&
+                        item.getSize() == size &&
+                        item.getMeasuringUnit().equals(measuringUnit) &&
+                        (item.getValidity() == null ? validity == null : item.getValidity().equals(validity)))
+                .findFirst()
+                .orElseThrow();
+    }
+
     private boolean isExceedingLimit(OrderDao orderDao, Long shelterId, ItemType itemType, Integer quantity) {
         int currentQuantity = getTotalItemsByType(orderDao, shelterId).getOrDefault(itemType, 0);
         return (currentQuantity + quantity) > 200;
@@ -139,19 +168,6 @@ public class OrderServiceImpl implements OrderService {
         return totalItemsByType;
     }
 
-    private void printOrders(OrderDao orderDao) {
-        List<Order> orders = orderDao.findAll()
-                .stream()
-                .filter(o -> !o.getAccepted() && o.getRefusalReason() == null)
-                .toList();
-
-        if (orders.isEmpty()) {
-            throw new ResourceNotFoundException("Nenhum pedido pendente.");
-        }
-
-        orders.forEach(System.out::println);
-    }
-
     private void orderRequest(OrderDao orderDao, List<Donation> donations, Shelter shelter, int quantity) {
         int totalDCQuantity = donations.stream().mapToInt(Donation::getQuantity).sum();
 
@@ -161,7 +177,7 @@ public class OrderServiceImpl implements OrderService {
 
         int remainingQuantity = quantity;
         for (Donation donation : donations) {
-            if (remainingQuantity <= 0) {
+            if (remainingQuantity == 0) {
                 break;
             }
             int donationQuantity = donation.getQuantity();
@@ -175,19 +191,34 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void processOrder(OrderDao orderDao, DonationDao donationDao, Order order) {
-        List<Donation> donations = donationDao.findByItemName(order.getItem().getName());
+        List<Donation> donations = donationDao.findAll()
+                .stream()
+                .filter(donation -> donation.getItem().getName().equals(order.getItem().getName()) &&
+                        donation.getItem().getItemType() == order.getItem().getItemType() &&
+                        donation.getItem().getDescription().equals(order.getItem().getDescription()) &&
+                        donation.getItem().getGenre() == order.getItem().getGenre() &&
+                        donation.getItem().getSize() == order.getItem().getSize() &&
+                        donation.getItem().getMeasuringUnit().equals(order.getItem().getMeasuringUnit()) &&
+                        (donation.getItem().getValidity() == null ? order.getItem().getValidity() == null : donation.getItem().getValidity().equals(order.getItem().getValidity())))
+                .toList();
 
-//        donations
-//                .stream()
-//                .filter(d -> {
-//                    if (d.getItem().getName().equals(order.getItem().getName() && d.getItem().getItemType().equals(order.getItem().getItemType()))) {
-//                        return true;
-//                    } else {
-//                        return false;
-//                    }
-//                })
-//                .findFirst()
-//                .orElseThrow();
+        int remainingQuantity = order.getQuantity();
+        for (Donation donation : donations) {
+            if (remainingQuantity == 0) {
+                break;
+            }
+
+            int donationQuantity = donation.getQuantity();
+
+            if (donationQuantity <= remainingQuantity) {
+                donationDao.delete(donation.getId());
+                remainingQuantity -= donationQuantity;
+            } else {
+                donation.setQuantity(donationQuantity - remainingQuantity);
+                donationDao.update(donation);
+                remainingQuantity = 0;
+            }
+        }
 
         order.setAccepted(true);
         order.setRefusalReason(null);
@@ -195,19 +226,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private Order createOrder(Donation donation, Shelter shelter, int quantity) {
-        Item item = createItem(
-                donation.getItem().getName(),
+        Item item = findItem(donation.getItem().getName(),
                 donation.getItem().getItemType(),
                 donation.getItem().getDescription(),
                 donation.getItem().getGenre(),
                 donation.getItem().getSize(),
                 donation.getItem().getMeasuringUnit(),
-                donation.getItem().getValidity()
-        );
+                donation.getItem().getValidity());
         return new Order(null, shelter, item, quantity, false, null);
-    }
-
-    private Item createItem(String name, ItemType itemType, String description, ClothingGenre genre, ClothingSize size, String measuringUnit, LocalDate validity) {
-        return new Item(null, name, itemType, description, genre, size, measuringUnit, validity, null, null);
     }
 }
