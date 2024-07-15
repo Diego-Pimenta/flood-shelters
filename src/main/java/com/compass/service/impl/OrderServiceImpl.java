@@ -74,7 +74,10 @@ public class OrderServiceImpl implements OrderService {
             orders.forEach(System.out::println);
 
             Long orderId = Long.parseLong(getInput("Digite o id do pedido que será analisado: "));
-            Order order = findOrder(orderDao, orderId);
+            Order order = orders.stream()
+                    .filter(o -> o.getId().equals(orderId))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado."));
 
             Boolean accepted = parseBoolean(getInput("O pedido será aceito ou recusado (Y/N)? "));
             if (accepted == null) {
@@ -118,14 +121,6 @@ public class OrderServiceImpl implements OrderService {
             throw new ResourceNotFoundException("Abrigo não encontrado.");
         }
         return shelter;
-    }
-
-    private Order findOrder(OrderDao orderDao, Long id) {
-        Order order = orderDao.findById(id);
-        if (order == null) {
-            throw new ResourceNotFoundException("Pedido não encontrado.");
-        }
-        return order;
     }
 
     private List<Order> findOrders(OrderDao orderDao) {
@@ -198,6 +193,12 @@ public class OrderServiceImpl implements OrderService {
                         donation.getItem().getMeasuringUnit().equals(order.getItem().getMeasuringUnit()) &&
                         (donation.getItem().getValidity() == null ? order.getItem().getValidity() == null : donation.getItem().getValidity().equals(order.getItem().getValidity())))
                 .toList();
+
+        int totalDCQuantity = donations.stream().mapToInt(Donation::getQuantity).sum();
+
+        if (order.getQuantity() > totalDCQuantity) {
+            throw new StorageLimitException("Quantidade solicitada insuficiente no estoque.");
+        }
 
         int remainingQuantity = order.getQuantity();
         for (Donation donation : donations) {
